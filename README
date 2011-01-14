@@ -8,3 +8,5 @@ The main features that I hope to invent time to make available:
 - An abstraction class that eables the controller to track events, attaching properties and/or superproperties
 - Provide a way to auto-track "actions" as events
 - Integrate with the user in some way, to auto-include some properties of the user automatically in every event registration
+- Helper for providing track registration on the view layer
+- Helper for having the "analytics by" icon

@@ -1,0 +1,11 @@
+# all:
+#   bu_mixpanel_plugin:
+#     enabled:      true
+#     project_id:   XX-XXXXX-X
+#     insertion:    bottom
+#     testing_mode: false
+# 
+#     # static super properties
+#     super_properties:
+#       property1:  value1
+#       property2:  value2
