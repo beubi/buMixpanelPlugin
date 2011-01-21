@@ -17,26 +17,13 @@ class buMixpanelFilter extends sfFilter
    */
   public function execute($filterChain)
   {
+    $filterChain->execute();
+
     $prefix   = 'bu_mixpanel_plugin_';
     $user     = $this->context->getUser();
     $request  = $this->context->getRequest();
     $response = $this->context->getResponse();
-
-    if ($this->isFirstCall())
-    {
-      $tracker = new buMixpanelTracker($this->context);
-
-      //TODO: Check what these are and check if they apply to this plugin
-      // pull callables from session storage
-      $callables = $user->getAttribute('callables', array(), 'bu_mixpanel_plugin');
-      foreach ($callables as $callable)
-      {
-        list($method, $arguments) = $callable;
-        call_user_func_array(array($tracker, $method), $arguments);
-      }
-    }
-
-    $filterChain->execute();
+    
     $tracker = $request->getMixpanelTracker();
 
     // apply module- and action-level configuration
@@ -67,8 +54,6 @@ class buMixpanelFilter extends sfFilter
       buMixpanelToolkit::logMessage($this, 'Tracking code not inserted.');
     }
 
-    $user->getAttributeHolder()->removeNamespace('bu_mixpanel_plugin');
-    $tracker->shutdown($user);
   }
 
   /**
