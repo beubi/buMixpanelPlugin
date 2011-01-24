@@ -1,12 +1,67 @@
 This plugin aims to ease the integration of mixpanel into a symfony project!
 
-The main features that I hope to invent time to make available:
 
-- Bundle with the possibly required libraries
-- Create a filter that automatically renders the necessary code
-- Main configuration and identifications into yaml
-- An abstraction class that eables the controller to track events, attaching properties and/or superproperties
-- Provide a way to auto-track "actions" as events
-- Integrate with the user in some way, to auto-include some properties of the user automatically in every event registration
-- Helper for providing track registration on the view layer
-- Helper for having the "analytics by" icon
+# Features:
+
+- Bundles the javascript library
+- Everything is configurable in yaml, app/mod/action levels
+- Enables auto-tracking of all symfony actions and its parameters
+- Allows to easily track an event and user properties
+- Some view-layer helpers
+
+# How to Install/Configure:
+
+## Get a mixpanel account, if you haven't got one
+
+http://www.mixpanel.com
+
+
+## Install the plugin
+
+
+For now, you need to download it into your plugins/ dir, but I will try to package it in PEAR soon
+
+## Add buMixpanelFilter to your filters.yml file
+
+        # insert your own filters here
+        bu_mixpanel_plugin:
+          class: buMixpanelFilter
+          
+## Configure your project token in your app.yml file
+
+        all:
+          bu_mixpanel_plugin:
+            params:
+              token: insertYourTokenHere
+
+## Publish the plugins assets
+
+        php symfony plugin:publish-assets
+        
+## Clear cache
+
+        php symfony cc
+
+        
+# How to use
+
+After configuring as explained above, it should automatically track your symfony internal actions and parameters
+
+Just go to your mixpanel project page to see the actions being registered in real-time.
+
+If you want a better control of what is tracked and how, here's the main things you can do:
+
+- Set the param "auto_tracking_enabled" to false in your app.yml
+- Set the global "enabled" to false in a certain environemnt or module
+- Register your event manually using $this->getMixpanelTracker()->addEvent($eventName,$eventProperties);
+- Set user-level properties upon login using $this->getMixpanelTracker()->addSuperProperty($propertyName, $propertyValue);
+
+
+# TODO:
+
+- Add helper for mixpanel platform, to generate charts to be displayed, easily
+- Allow backend invisible event tracking without javascript
+- Allow events to be configured in the module.yml
+- Integrate with sfGuard for optionally auto-registering user properties
+- Get feedback
+- Test it in a real project
