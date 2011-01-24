@@ -1,11 +1,15 @@
-# all:
-#   bu_mixpanel_plugin:
-#     enabled:      true
-#     project_id:   XX-XXXXX-X
-#     insertion:    bottom
-#     testing_mode: false
-# 
-#     # static super properties
-#     super_properties:
-#       property1:  value1
-#       property2:  value2
+all:
+  bu_mixpanel_plugin:
+    params:
+      enabled:               true                              # Shall the mixpanel analytics be activated at all?
+      auto_tracking_enabled: true                              # Tells mixpanel if auto-tracking of symfony actions shall be performed
+      testing_mode:          false                             # Is the testing mode on?
+      token:                 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  # The token that identifies the project in mixpanel - mandatory insertion
+      bucket:                false                             # The name of the mixpanel platform bucket to be used (false for none)
+      use_remote_js:         false                             # Wether should hosted js be used or one in the site itself
+      super_properties:      {}                                # Associative array of static super properties (pairs name:value)
+    
+dev:
+  bu_mixpanel_plugin:
+    params:
+      testing_mode: true  

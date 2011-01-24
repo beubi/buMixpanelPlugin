@@ -24,26 +24,33 @@ class buMixpanelFilter extends sfFilter
 
     $tracker = $request->getMixpanelTracker();
 
+    // apply module- and action-level configuration
+    $module = $this->context->getModuleName();
+    $action = $this->context->getActionName();
+
+    $appConfig = sfConfig::get('app_bu_mixpanel_plugin_params',array());
+    $tracker->configure($appConfig);
+
+    $moduleConfig = sfConfig::get('mod_'.strtolower($module).'_bu_mixpanel_plugin_params', array());
+    $tracker->configure($moduleConfig);
+
+    $actionConfig = sfConfig::get('mod_'.strtolower($module).'_'.$action.'_bu_mixpanel_plugin_params', array());
+    $tracker->configure($actionConfig);
+
     if($tracker->useRemoteJs() === false)
     {
     	$response->addJavascript('/buMixpanelPlugin/js/mixpanel.js');
     }
 
-    $filterChain->execute();
-
-
-    // apply module- and action-level configuration
-    $module = $this->context->getModuleName();
-    $action = $this->context->getActionName();
-
-    $moduleParams = sfConfig::get('mod_'.strtolower($module).'_bu_mixpanel_plugin_params', array());
-    $tracker->configure($moduleParams);
-
-    $actionConfig = sfConfig::get('mod_'.strtolower($module).'_'.$action.'_bu_mixpanel_plugin', array());
-    if (isset($actionConfig['params']))
+    if($tracker->isAutoTrackingEnabled())
     {
-      $tracker->configure($actionConfig['params']);
+    	$parameters = unserialize($request->getParameterHolder()->serialize());
+    	unset($parameters['module']);
+    	unset($parameters['action']);
+    	$tracker->addEvent($module.'/'.$action,$parameters);
     }
+
+    $filterChain->execute();
 
     // insert tracking code
     if ($this->isTrackable() && $tracker->isEnabled())

@@ -1,46 +1,116 @@
 <?php
 
+/**
+ * Mixpanel Tracker. Is the main handler of all events, properties, etc.
+ *
+ * @package    buMixpanelPlugin
+ * @subpackage tracker
+ * @author     Ubiprism Lda. / be.ubi <contact@beubi.com>
+ * @version    SVN: $Id$
+ */
 class buMixpanelTracker
 {
 
   protected static $instance = null;
   protected $configuration = array();
+  protected $user;
 
+  /**
+   * Constructs a mixpanel tracker instance, and saves teh session user object for future manipulation
+   *
+   * @param sfUser $user The session user to be handled
+   */
+  public function __construct($user)
+  {
+  	$this->user = $user;
+  }
+
+	/**
+	 * Gets the singleton instance of the tracker.
+	 *
+	 * If no instance exists, one is created and then returned.
+	 *
+	 * @static
+	 * @return buMixpanelTracker $mixpanelTracker The current tracker instance
+	 */
   public static function getInstance()
   {
     if(is_null(self::$instance))
     {
-      self::$instance = new buMixpanelTracker();
+      self::$instance = new buMixpanelTracker(sfContext::getInstance()->getUser());
     }
     return self::$instance;
   }
 
+	/**
+	 * Merges recursively a set of loaded configurations into the tracker
+	 *
+	 * @param array $newConfigurations The configurations to be merged
+	 */
   public function configure($newConfigurations)
   {
-    $this->configuration = array_merge($this->configuration, $newConfigurations);
+    $this->configuration = array_merge_recursive($this->configuration, $newConfigurations);
   }
 
-
+	/**
+	 * Checks in the configuration if mixpanel is activated
+	 *
+	 * @return boolean $isEnabled True if it is, false if it isn't
+	 */
   public function isEnabled()
   {
-  	return true;
+ 		return $this->configuration['enabled'];
   }
 
+	/**
+	 * Checks in the auto-tracking mode is activated
+	 *
+	 * @return boolean $autoTrackingEnabled True if it is, false if it isn't
+	 */
+  public function isAutoTrackingEnabled()
+  {
+ 		return $this->configuration['auto_tracking_enabled'];
+  }
+
+  /**
+   * Checks in the configuration if we should be using the remote js library, from the mixpanel servers
+   *
+   * @return boolean $useRemoteJs True if the mixpanel library shall be used, false if a local one should be used
+   */
   public function useRemoteJs()
   {
-  	return false;
+  	return $this->configuration['use_remote_js'];
   }
 
+  /**
+   * Gets the current bucket to be used, for mixpanel platform
+   *
+   * @return string $bucket The name of the bucket or false if none.
+   */
+  public function getBucket()
+  {
+  	return $this->configuration['bucket'];
+  }
+
+  /**
+   * Gets if the testing mode is enabled
+   *
+   * @return boolean $testingMode True if the test mode shall be used, false otherwise
+   */
   public function isTestingModeEnabled()
   {
-  	return true;
+ 		return $this->configuration['testing_mode'];
   }
 
+  /**
+   * Gets the list of events to be processed and cleans them
+   *
+   * @return array $events The array of events to be processed
+   */
   public function getEvents()
   {
-    $user = sfContext::getInstance()->getUser();
-    $events = $user->getAttribute('events', array(), 'bu_mixpanel_plugin');
-    $user->setAttribute('events', array(), 'bu_mixpanel_plugin');
+    $events = $this->user->getAttribute('events', array(), 'bu_mixpanel_plugin');
+    $this->user->setAttribute('events', array(), 'bu_mixpanel_plugin');
     return $events;
   }
 
@@ -54,20 +124,19 @@ class buMixpanelTracker
    */
   public function addEvent($eventName, $properties = array())
   {
-    $user = sfContext::getInstance()->getUser();
-
-    $events = $user->getAttribute('events', array(), 'bu_mixpanel_plugin');
-
+  	if($this->getBucket())
+  	{
+  		 $properties = array_merge($properties, array('bucket' => $this->getBucket()));
+  	}
+    $events = $this->user->getAttribute('events', array(), 'bu_mixpanel_plugin');
     $events = array_merge($events, array($eventName => $properties));
-
-    $user->setAttribute('events', $events, 'bu_mixpanel_plugin');
+    $this->user->setAttribute('events', $events, 'bu_mixpanel_plugin');
   }
 
 
   public function getSuperProperties()
   {
-    $user = sfContext::getInstance()->getUser();
-    return $user->getAttribute('super_properties', array(), 'bu_mixpanel_plugin');
+    return $this->user->getAttribute('super_properties', array(), 'bu_mixpanel_plugin');
   }
 
   /**
@@ -77,9 +146,7 @@ class buMixpanelTracker
    */
   public function clearSuperProperties()
   {
-    $user = sfContext::getInstance()->getUser();
-
-    $user->setAttribute('super_properties', array(), 'bu_mixpanel_plugin');
+    $this->user->setAttribute('super_properties', array(), 'bu_mixpanel_plugin');
   }
 
   /**
@@ -92,11 +159,10 @@ class buMixpanelTracker
    */
   public function addSuperProperty($name, $value)
   {
-    $user = sfContext::getInstance()->getUser();
-    $superProperties = $user->getAttribute('super_properties', array(), 'bu_mixpanel_plugin');
+    $superProperties = $this->user->getAttribute('super_properties', array(), 'bu_mixpanel_plugin');
     $superProperties = array_merge($superProperties, array($name => $value));
-    $user->setAttribute('super_properties', $superProperties, 'bu_mixpanel_plugin');
-    $user->setAttribute('super_properties_changed', true, 'bu_mixpanel_plugin');
+    $this->user->setAttribute('super_properties', $superProperties, 'bu_mixpanel_plugin');
+    $this->user->setAttribute('super_properties_changed', true, 'bu_mixpanel_plugin');
   }
 
   /**
@@ -117,16 +183,27 @@ class buMixpanelTracker
     }
   }
 
+  /**
+   * Gets the currently configured token
+   *
+   * @return string $token current token
+   */
   public function getToken()
   {
-    return 'ab07fc79825fd4fcc7deab28d0f8d52a';
+  	return $this->configuration['token'];
   }
 
-
+	/**
+	 * Inserts the code into the body
+	 *
+	 * @param sfWebResponse $response The response where the mixpanel code shall be inserted
+	 */
   public function insert(sfWebResponse $response)
   {
+  	// Creates a container for the generated html
     $html = array();
 
+    // If we need to use the remote js, we should insert this first
     if ($this->useRemoteJs())
     {
     	$html[] = '<script type="text/javascript">';
@@ -137,6 +214,7 @@ class buMixpanelTracker
     	$html[] = '</script>';
     }
 
+    // Inserts the init script, with the optional testing mode option
     $html[] = '<script type="text/javascript">';
     $html[] = '//<![CDATA[';
     $html[] = 'try {';
@@ -159,17 +237,20 @@ class buMixpanelTracker
     $html[] = '//]]>';
     $html[] = '</script>';
 
+    // Inserts a script with the current superproperties
     $superProperties = $this->getSuperProperties();
+		$superProperties = array_merge($this->configuration['super_properties'],$superProperties);
 
     if(count($superProperties) > 0)
     {
       $html[] = '<script type="text/javascript">';
       $html[] = '//<![CDATA[';
-      $html[] = '  mpmetrics.register_once("'.json_encode($superProperties).'");';
+      $html[] = '  mpmetrics.register_once('.json_encode($superProperties).');';
       $html[] = '//]]>';
       $html[] = '</script>';
     }
 
+    // Inserts a script with the events (and automatically cleans them
     $events = $this->getEvents();
 
     if(count($events) > 0)
@@ -179,17 +260,22 @@ class buMixpanelTracker
 
       foreach($events as $name => $properties)
       {
-        //$html[] = '  mpmetrics.track("'.$name.'",'.json_encode($properties).');';
-        $html[] = '  mpmetrics.track("'.$name.'");';
+      	if(count($properties) > 0)
+      	{
+      		$html[] = '  mpmetrics.track("'.$name.'",'.json_encode($properties).');';
+      	}
+        else
+        {
+        	$html[] = '  mpmetrics.track("'.$name.'");';
+        }
       }
       $html[] = '//]]>';
       $html[] = '</script>';
     }
 
+    // Inserts the code just before </body>
     $html = join("\n", $html);
-
     $old = $response->getContent();
-
     $new = str_ireplace('</body>', "\n".$html."\n</body>", $old);
 
     if ($old == $new)
