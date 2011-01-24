@@ -17,14 +17,20 @@ class buMixpanelFilter extends sfFilter
    */
   public function execute($filterChain)
   {
-    $filterChain->execute();
-
     $prefix   = 'bu_mixpanel_plugin_';
     $user     = $this->context->getUser();
     $request  = $this->context->getRequest();
     $response = $this->context->getResponse();
-    
+
     $tracker = $request->getMixpanelTracker();
+
+    if($tracker->useRemoteJs() === false)
+    {
+    	$response->addJavascript('/buMixpanelPlugin/js/mixpanel.js');
+    }
+
+    $filterChain->execute();
+
 
     // apply module- and action-level configuration
     $module = $this->context->getModuleName();

@@ -17,9 +17,24 @@ class buMixpanelTracker
 
   public function configure($newConfigurations)
   {
-    $this->configuration = array_merge($this->configuration, $configurations);
+    $this->configuration = array_merge($this->configuration, $newConfigurations);
   }
 
+
+  public function isEnabled()
+  {
+  	return true;
+  }
+
+  public function useRemoteJs()
+  {
+  	return false;
+  }
+
+  public function isTestingModeEnabled()
+  {
+  	return true;
+  }
 
   public function getEvents()
   {
@@ -43,7 +58,7 @@ class buMixpanelTracker
 
     $events = $user->getAttribute('events', array(), 'bu_mixpanel_plugin');
 
-    $events = array_push($events, array($eventName => $properties));
+    $events = array_merge($events, array($eventName => $properties));
 
     $user->setAttribute('events', $events, 'bu_mixpanel_plugin');
   }
@@ -79,7 +94,7 @@ class buMixpanelTracker
   {
     $user = sfContext::getInstance()->getUser();
     $superProperties = $user->getAttribute('super_properties', array(), 'bu_mixpanel_plugin');
-    $superProperties = array_push($superProperties, array($name => $value));
+    $superProperties = array_merge($superProperties, array($name => $value));
     $user->setAttribute('super_properties', $superProperties, 'bu_mixpanel_plugin');
     $user->setAttribute('super_properties_changed', true, 'bu_mixpanel_plugin');
   }
@@ -112,16 +127,24 @@ class buMixpanelTracker
   {
     $html = array();
 
-    $html[] = '<script type="text/javascript">';
-    $html[] = '//<![CDATA[';
-    $html[] = 'var mp_protocol = (("https:" == document.location.protocol) ? "https://" : "http://");';
-    $html[] = 'document.write(unescape("%3Cscript src=\'" + mp_protocol + "api.mixpanel.com/site_media/js/api/mixpanel.js\' type=\'text/javascript\'%3E%3C/script%3E"));';
-    $html[] = '//]]>';
-    $html[] = '</script>';
+    if ($this->useRemoteJs())
+    {
+    	$html[] = '<script type="text/javascript">';
+    	$html[] = '//<![CDATA[';
+    	$html[] = 'var mp_protocol = (("https:" == document.location.protocol) ? "https://" : "http://");';
+    	$html[] = 'document.write(unescape("%3Cscript src=\'" + mp_protocol + "api.mixpanel.com/site_media/js/api/mixpanel.js\' type=\'text/javascript\'%3E%3C/script%3E"));';
+    	$html[] = '//]]>';
+    	$html[] = '</script>';
+    }
+
     $html[] = '<script type="text/javascript">';
     $html[] = '//<![CDATA[';
     $html[] = 'try {';
     $html[] = '    var mpmetrics = new MixpanelLib("'.$this->getToken().'");';
+		if($this->isTestingModeEnabled())
+		{
+    	$html[] = '    mpmetrics.set_config({"test": 1});';
+		}
     $html[] = '} catch(err) {';
     $html[] = '    var null_fn = function () {};';
     $html[] = '    var mpmetrics = {';
@@ -153,9 +176,11 @@ class buMixpanelTracker
     {
       $html[] = '<script type="text/javascript">';
       $html[] = '//<![CDATA[';
+
       foreach($events as $name => $properties)
       {
-        $html[] = '  mpmetrics.track("'.$name.','.json_encode($properties).'");';
+        //$html[] = '  mpmetrics.track("'.$name.'",'.json_encode($properties).');';
+        $html[] = '  mpmetrics.track("'.$name.'");';
       }
       $html[] = '//]]>';
       $html[] = '</script>';
