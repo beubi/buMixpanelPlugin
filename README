@@ -18,8 +18,9 @@ http://www.mixpanel.com
 
 ## Install the plugin
 
+You can either download it (and extract it into plugins/) or install it through symfony's pear channel:
 
-For now, you need to download it into your plugins/ dir, but I will try to package it in PEAR soon
+        php symfony plugin:install buMixpanelPlugin --stability="alpha"
 
 ## Add buMixpanelFilter to your filters.yml file
 
