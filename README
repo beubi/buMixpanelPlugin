@@ -7,6 +7,7 @@ This plugin aims to ease the integration of mixpanel into a symfony project!
 - Everything is configurable in yaml, app/mod/action levels
 - Enables auto-tracking of all symfony actions and its parameters
 - Allows to easily track an event and user properties
+- Allows to easily set a name_tag for every event, so the user is always identified
 - Some view-layer helpers
 
 # How to Install/Configure:
@@ -65,4 +66,3 @@ If you want a better control of what is tracked and how, here's the main things 
 - Allow events to be configured in the module.yml
 - Integrate with sfGuard for optionally auto-registering user properties
 - Get feedback
-- Test it in a real project
