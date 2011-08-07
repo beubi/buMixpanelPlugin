@@ -133,6 +133,28 @@ class buMixpanelTracker
     $this->user->setAttribute('events', $events, 'bu_mixpanel_plugin');
   }
 
+  /**
+   * Gets the name_tag of the current user. This can be set by the app to identify the user in the analytics
+   *
+   * @return String $nameTag The string that represents the current user
+   */
+  public function getNameTag()
+  {
+    return $this->user->getAttribute('name_tag', array(), 'bu_mixpanel_plugin');
+  }
+
+  /**
+   * Sets the name_tag of the current user. This allows the user to be easily identifiable in the mixpanel stream analytics
+   *
+   * @param string $nameTag A string that identifies the user (usually the user's name, login and/or e-mail address)
+   *
+   * @return nothing
+   */
+  public function setNameTag($nameTag)
+  {
+    $this->user->setAttribute('name_tag', $nameTag, 'bu_mixpanel_plugin');
+  }
+
 
   public function getSuperProperties()
   {
@@ -269,6 +291,13 @@ class buMixpanelTracker
         	$html[] = '  mpmetrics.track("'.$name.'");';
         }
       }
+
+      // Insert the user's recognizable name, if provided
+      if(!is_null($this->getNameTag()))
+      {
+        $html[] = '  mpmetrics.name_tag("'.$this->getNameTag().'");';
+      }
+
       $html[] = '//]]>';
       $html[] = '</script>';
     }
